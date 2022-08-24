@@ -7,8 +7,11 @@ const app = express();
 
 // Criando um requisição GET
 app.get('/', async (request, response) => {
+    // Abrindo o navegador
     const browser = await puppeteer.launch();
+    // Abrindo uma nova aba
     const page = await browser.newPage();
+    // Acessando o site com os dados
     await page.goto('https://webscraper.io/test-sites/e-commerce/allinone/computers/laptops');
     // Captura de dados
     const lenovos = await page.evaluate(() => {
@@ -17,7 +20,6 @@ app.get('/', async (request, response) => {
         var notebook = {}
         var count = 1
         var length = document.querySelectorAll('body > div.wrapper > div.container.test-site > div > div.col-md-9 > div > div').length
-
         //Percorrendo o HTML e coletando os dados de cada notebook
         while (count < length) {
             //Criando o objeto que armazenará as informações de cada notebook
@@ -34,14 +36,19 @@ app.get('/', async (request, response) => {
                 notebooks.push(notebook)
             count = count + 1
         };
-
-        return notebooks;
+        // Filtrando o titulo para obter apenas notebooks da Lenovo incluido os modelos ThinkPad que não tem Lenovo no nome
+        const filteredLenovo = notebooks.filter(item => item.title.includes("Lenovo") || item.title.includes("ThinkPad"))
+        // Ordenando pelo preço menor
+        const orderByPrice = filteredLenovo.sort((a, b) => {
+            return a.price.replace('$', '') - b.price.replace('$', '')
+        })
+        // Retornando a Lista
+        return orderByPrice;
     })
-    //retornando a lista de notebooks para cliente
+    // Enviando a lista de notebooks para cliente
     response.send(lenovos)
+    await browser.close();
 });
-//await browser.close();
-
 // Declarando a porta para o servidor
 const port = 3000;
 app.listen(port, () => {
